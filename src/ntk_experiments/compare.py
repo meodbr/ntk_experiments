@@ -1,5 +1,3 @@
-import math
-
 import numpy as np
 import pandas as pd
 
@@ -12,10 +10,36 @@ import matplotlib.pyplot as plt
 from .config import config
 from .random_walk import random_walk_unit_sphere, unit_sphere
 from .theoretical_ntk import infinite_width_ntk, relu, relu_prime
-from .empirical_ntk import empirical_ntk
+from .empirical_ntk import empirical_ntk, reshape_to_2D_jacobian
 from .ntkmlp_model import NTKMLP
+from .train import train_model
+from .dataset import get_dataset
 
 sns.set_theme()
+
+def compare_empirical_theoretical_ntk_on_sample(width):
+    model = NTKMLP(input_dim=config.INPUT_DIM, width=width, depth=4, beta=config.BETA)
+    # model = MLP_classic(width)
+    dataset = get_dataset(config.DATASET)
+    X_train, X_test, y_train, y_test = dataset
+
+    x = X_train[0:1] # Shape: (1, 64)
+    x_prime = X_train[1:2] # Shape: (1, 64)
+
+    empirical = empirical_ntk(model, x, x_prime).item()
+    theoretical = infinite_width_ntk(
+        x=x.view(-1),
+        xp=x_prime.view(-1),
+        depth=4,
+        sigma=relu,
+        sigma_prime=relu_prime,
+        sigma_w=np.sqrt(2.0),
+        beta=config.BETA,
+        n_gh=40,
+    )[0]
+
+    print("Empirical NTK:", empirical)
+    print("Theoretical NTK:", theoretical)
 
 def compare_empirical_theoretical_ntk_on_circle(widths, steps=25):
     models = [NTKMLP(input_dim=config.INPUT_DIM, width=width, depth=4, beta=config.BETA) for width in widths]
@@ -70,6 +94,8 @@ def compare_empirical_theoretical_ntk_on_circle(widths, steps=25):
 
 if __name__ == "__main__":
     widths = [100, 500, 1000, 5000]
+    # acc = train_model(width)
     print(f"Comparing empirical and theoretical NTK for widths {widths}...")
 
+    # compare_empirical_theoretical_ntk_on_sample(width)
     compare_empirical_theoretical_ntk_on_circle(widths, steps=100)

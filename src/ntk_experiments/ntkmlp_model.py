@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import math
 
+from .config import config
 
 # ============================================================
 # NTK-STYLE LINEAR LAYER
@@ -77,9 +78,7 @@ class NTKMLP(nn.Module):
 
         self.reset_parameters()
 
-    # --------------------------------------------------------
     # Custom initialization (CRITICAL for NTK match)
-    # --------------------------------------------------------
 
     def reset_parameters(self):
         for layer in self.layers:
@@ -91,9 +90,7 @@ class NTKMLP(nn.Module):
         if self.out_layer.bias is not None:
             nn.init.normal_(self.out_layer.bias, mean=0.0, std=1.0)
 
-    # --------------------------------------------------------
     # Forward pass
-    # --------------------------------------------------------
 
     def forward(self, x):
         """
@@ -110,3 +107,45 @@ class NTKMLP(nn.Module):
         out = self.out_layer(h)
 
         return out.squeeze(-1)
+
+# Simple MLP
+class MLP_classic(nn.Module):
+    def __init__(self, width):
+        super().__init__()
+        self.width = width
+        self.net = nn.Sequential(
+            nn.Linear(config.INPUT_DIM, width),
+            nn.ReLU(),
+            nn.Linear(width, config.OUTPUT_DIM)
+        )
+
+    def forward(self, x):
+        return self.net(x)# / math.sqrt(self.width)  # NTK scaling
+
+
+class Old_NTKMLP(nn.Module):
+    def __init__(self, width):
+        super().__init__()
+
+        self.fc1 = nn.Linear(config.INPUT_DIM, width, bias=True)
+        self.fc2 = nn.Linear(width, config.OUTPUT_DIM, bias=True)
+
+        self.width = width
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        # N(0,1) weights (NOT Kaiming)
+        nn.init.normal_(self.fc1.weight, mean=0.0, std=1.0)
+        nn.init.normal_(self.fc2.weight, mean=0.0, std=1.0)
+
+        nn.init.normal_(self.fc1.bias, mean=0.0, std=config.BETA)
+        nn.init.normal_(self.fc2.bias, mean=0.0, std=config.BETA)
+
+    def forward(self, x):
+        # explicit NTK scaling
+        x = self.fc1(x) / math.sqrt(self.width)
+        x = torch.relu(x)
+        x = self.fc2(x) / math.sqrt(self.width)
+
+        return x
