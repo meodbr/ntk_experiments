@@ -193,8 +193,9 @@ def compare_empirical_theoretical_ntk_on_random_walk(width, steps=100):
             x=x,
             xp=x_prime,
             depth=4,
-            sigma=relu,
-            sigma_prime=relu_prime,
+            # sigma=relu,
+            # sigma_prime=relu_prime,
+            implemented_sigma="relu",
             sigma_w=1.0,
             beta=BETA,
             n_gh=40,
@@ -204,10 +205,10 @@ def compare_empirical_theoretical_ntk_on_random_walk(width, steps=100):
         theoretical_ntks.append(theoretical)
 
     plt.figure(figsize=(10, 5))
-    plt.plot(gamma, empirical_ntks, label='Empirical NTK')
-    plt.plot(gamma, theoretical_ntks, label='Theoretical NTK', linestyle='dashed')
-    plt.title('Empirical vs Theoretical NTK along Random Walk on Sphere')
-    plt.xlabel('Gamma (angle along sphere)')
+    plt.plot(gamma, theoretical_ntks, label='Theoretical NTK')
+    plt.plot(gamma, empirical_ntks, label='Empirical NTK', linestyle='dashed')
+    plt.title('Empirical vs Theoretical NTK along unit circle')
+    plt.xlabel('Gamma (angle along circle)')
     plt.ylabel('NTK Value')
     plt.legend()
     plt.show()

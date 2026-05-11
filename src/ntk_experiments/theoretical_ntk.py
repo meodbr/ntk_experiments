@@ -1,9 +1,4 @@
 """
-infinite_width_ntk.py
-===============================================================
-Recursive Infinite-Width Neural Tangent Kernel (NTK) for MLPs
-===============================================================
-
 This script implements the theoretical infinite-width Neural
 Tangent Kernel (NTK) recursion for a fully-connected multilayer
 perceptron (MLP) of arbitrary depth L.
@@ -17,43 +12,12 @@ The implementation follows:
 Paper:
 https://arxiv.org/abs/1806.07572
 
-----------------------------------------------------------------
-MATHEMATICAL SETUP
-----------------------------------------------------------------
 
-Consider an MLP:
-
-    h_i^(1)(x)
-        = (σ_w / sqrt(d)) Σ_j W_ij^(1) x_j
-          + β b_i^(1)
-
-    h_i^(ℓ+1)(x)
-        = (σ_w / sqrt(n_ℓ))
-          Σ_j W_ij^(ℓ+1) φ(h_j^(ℓ)(x))
-          + β b_i^(ℓ+1)
-
-where:
-
-    W_ij^(ℓ) ~ N(0,1)
-    b_i^(ℓ)  ~ N(0,1)
-
-and:
-
-    φ = σ
-
-In the infinite-width limit:
-
-    n_ℓ → ∞
-
-all preactivations become jointly Gaussian.
-
-----------------------------------------------------------------
-COVARIANCE RECURSION (Σ)
-----------------------------------------------------------------
+# COVARIANCE RECURSION (Σ)
 
 Base layer:
 
-    Σ^(0)(x,x') = (1/d) x^T x'
+    Σ^(0)(x,x') = (1/d) x^T x' + β²
 
 Recursive covariance:
 
@@ -74,9 +38,7 @@ with covariance matrix:
     Λ^(ℓ) = [ Σ^(ℓ)(x,x)    Σ^(ℓ)(x,x')  ]
              [ Σ^(ℓ)(x',x)   Σ^(ℓ)(x',x') ]
 
-----------------------------------------------------------------
-NTK RECURSION (Θ)
-----------------------------------------------------------------
+# NTK RECURSION (Θ)
 
 The infinite-width NTK recursion is:
 
@@ -88,41 +50,15 @@ and recursively:
         = Σ^(ℓ+1)(x,x')
           + dΣ^(ℓ+1)(x,x') Θ^(ℓ)(x,x')
 
-This script implements this recursion directly.
-
-----------------------------------------------------------------
-FEATURES
-----------------------------------------------------------------
-
-✓ Arbitrary activation functions
-✓ Arbitrary network depth
-✓ Recursive Σ and Θ computation
-✓ Gaussian quadrature integration
-✓ Works for ReLU, tanh, erf, sigmoid, etc.
-✓ Numerically stable
-✓ Theoretical infinite-width limit
-
-----------------------------------------------------------------
-DEPENDENCIES
-----------------------------------------------------------------
-
-pip install numpy
-
-----------------------------------------------------------------
-AUTHOR
-----------------------------------------------------------------
-
-Generated with ChatGPT
 """
+
+import math
 
 import numpy as np
 from numpy.polynomial.hermite import hermgauss
 
 
-# ===============================================================
-# GAUSSIAN EXPECTATION HELPER
-# ===============================================================
-
+# GAUSSIAN EXPECTATION HELPERS
 
 def gaussian_expectation(cov, f, n_gh=40):
     """
@@ -176,6 +112,27 @@ def gaussian_expectation(cov, f, n_gh=40):
 
     return expectation
 
+def gaussian_expectation_relu_prime(cov):
+    """
+    Computes E(u, v)~N(0, cov)[ReLU'(u)ReLU'(v)]
+    """
+    rho = cov[0, 1] / math.sqrt(cov[0, 0] * cov[1, 1])
+    expectation = .25 + (1/(2*math.pi)) * math.asin(rho)
+    return expectation
+
+def gaussian_expectation_relu(cov):
+    """
+    Computes E(u, v)~N(0, cov)[ReLU(u)ReLU(v)]
+    """
+    rho = cov[0, 1] / math.sqrt(cov[0, 0] * cov[1, 1])
+    
+    expectation = (
+        (math.sqrt(cov[0, 0]*cov[1, 1]) / (2*math.pi))
+        * (math.sqrt(1-rho*rho) + (math.pi-math.acos(rho)) * rho)
+    )
+    return expectation
+
+
 
 # ===============================================================
 # INFINITE-WIDTH NTK RECURSION
@@ -186,8 +143,9 @@ def infinite_width_ntk(
     x,
     xp,
     depth,
-    sigma,
-    sigma_prime,
+    sigma=None,
+    sigma_prime=None,
+    implemented_sigma=None,
     sigma_w=1.0,
     beta=1.0,
     n_gh=40,
@@ -233,18 +191,16 @@ def infinite_width_ntk(
         Final 2×2 covariance matrix.
     """
 
-    # -----------------------------------------------------------
+    if implemented_sigma is None:
+        assert sigma is not None and sigma_prime is not None
+
     # Input dimension
-    # -----------------------------------------------------------
 
     d = x.shape[0]
     print(f"Input dimension d for theoretical NTK: {d}")
 
-    # -----------------------------------------------------------
     # Base covariance Σ^(0)
-    #
     # Σ^(0)(x,x') = (1/d) x^T x' + β²
-    # -----------------------------------------------------------
 
     Sigma_xx = np.dot(x, x) / d + beta**2
     Sigma_xxp = np.dot(x, xp) / d + beta**2
@@ -290,13 +246,20 @@ def infinite_width_ntk(
                 #   = σ_w² E[σ(u)σ(v)] + β²
                 # ------------------------------------------------
 
+                g_expectation = None
+                match implemented_sigma:
+                    case "relu":
+                        g_expectation = gaussian_expectation_relu(cov)
+                    case _:
+                        g_expectation = gaussian_expectation(
+                            cov,
+                            lambda u, v: sigma(u) * sigma(v),
+                            n_gh=n_gh,
+                        )
+
                 Sigma_next[i, j] = (
                     sigma_w**2
-                    * gaussian_expectation(
-                        cov,
-                        lambda u, v: sigma(u) * sigma(v),
-                        n_gh=n_gh,
-                    )
+                    * g_expectation
                     + beta**2
                 )
 
@@ -307,14 +270,21 @@ def infinite_width_ntk(
                 #   = σ_w² E[σ'(u)σ'(v)]
                 # ------------------------------------------------
 
+                g_expectation_prime = None
+                match implemented_sigma:
+                    case "relu":
+                        g_expectation_prime = gaussian_expectation_relu_prime(cov)
+                    case _:
+                        g_expectation_prime = gaussian_expectation(
+                            cov,
+                            lambda u, v:
+                            sigma_prime(u) * sigma_prime(v),
+                            n_gh=n_gh,
+                        )
+
                 DotSigma_next[i, j] = (
                     sigma_w**2
-                    * gaussian_expectation(
-                        cov,
-                        lambda u, v:
-                        sigma_prime(u) * sigma_prime(v),
-                        n_gh=n_gh,
-                    )
+                    * g_expectation_prime
                 )
 
         # -------------------------------------------------------
