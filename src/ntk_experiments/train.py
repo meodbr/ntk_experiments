@@ -11,7 +11,7 @@ def train_model(model, dataset='synthetic', epochs=50, lr=1e-3):
 
     X_train, X_test, y_train, y_test = dataset
     opt = torch.optim.Adam(model.parameters(), lr=lr)
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.MSELoss()
 
     for _ in range(epochs):
         logits = model(X_train)
@@ -22,7 +22,7 @@ def train_model(model, dataset='synthetic', epochs=50, lr=1e-3):
         opt.step()
 
     with torch.no_grad():
-        preds = model(X_test).argmax(dim=1)
-        acc = (preds == y_test).float().mean().item()
+        preds = model(X_test)
+        acc = (preds - y_test).abs().mean().item()  # Simple accuracy for regression
 
     return acc

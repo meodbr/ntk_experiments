@@ -92,10 +92,64 @@ def compare_empirical_theoretical_ntk_on_circle(widths, steps=25):
     plt.legend()
     plt.show()
 
+def compare_empirical_theoretical_during_training(width):
+    model = NTKMLP(input_dim=config.INPUT_DIM, width=width, depth=4, beta=config.BETA)
+    dataset = get_dataset(config.DATASET)
+    gamma, traj = unit_sphere(dim=config.INPUT_DIM, steps=100, seed=config.SEED)
+
+    epoch_step = 40
+    epochs = np.arange(0, 6) * epoch_step
+    x = torch.zeros((config.INPUT_DIM, ), dtype=torch.float32)
+    x[0] = 1.0  # Compare every point on the trajectory to this fixed reference point
+
+    theoretical_ntks = []
+    empirical_ntks_per_num_epoch = []
+
+    for i in range(len(traj)):
+        x_prime = traj[i]
+        theoretical = infinite_width_ntk(
+            x=x,
+            xp=x_prime,
+            depth=4,
+            # sigma=relu,
+            # sigma_prime=relu_prime,
+            implemented_sigma="relu",
+            sigma_w=1.0,
+            beta=config.BETA,
+            n_gh=40,
+        )[0]
+
+        theoretical_ntks.append(theoretical)
+    
+    for num_epoch in epochs:
+        empirical_ntks = []
+        for i in range(len(traj)):
+            x_prime = traj[i]
+            empirical = empirical_ntk(model, torch.tensor(x, dtype=torch.float32).unsqueeze(0), torch.tensor(x_prime, dtype=torch.float32).unsqueeze(0)).item()
+            empirical_ntks.append(empirical)
+        empirical_ntks_per_num_epoch.append(empirical_ntks)
+        print(f"Training for {epoch_step} epochs...")
+        acc = train_model(model, dataset=config.DATASET, epochs=num_epoch)
+        print(f"Epochs: {num_epoch}, Accuracy: {acc:.4f}")
+
+    
+    plt.figure(figsize=(10, 5))
+    for empirical_ntks, num_epoch in zip(empirical_ntks_per_num_epoch, epochs):
+        plt.plot(gamma, empirical_ntks, label=f"Finite-width NTK after {num_epoch} epochs", linestyle='dashed')
+    plt.plot(gamma, theoretical_ntks, label='Theoretical infinite-width NTK', color="red")
+    plt.title(f'Theoretical constant NTK vs Empirical NTK of width {width} during training')
+    plt.xlabel('Gamma (angle along circle)')
+    plt.ylabel('NTK Value')
+    plt.legend()
+    plt.show()
+
+
+
 if __name__ == "__main__":
     widths = [100, 500, 1000, 5000]
     # acc = train_model(width)
     print(f"Comparing empirical and theoretical NTK for widths {widths}...")
 
     # compare_empirical_theoretical_ntk_on_sample(width)
-    compare_empirical_theoretical_ntk_on_circle(widths, steps=100)
+    # compare_empirical_theoretical_ntk_on_circle(widths, steps=100)
+    compare_empirical_theoretical_during_training(width=1000)

@@ -117,6 +117,7 @@ def gaussian_expectation_relu_prime(cov):
     Computes E(u, v)~N(0, cov)[ReLU'(u)ReLU'(v)]
     """
     rho = cov[0, 1] / math.sqrt(cov[0, 0] * cov[1, 1])
+    rho = np.clip(rho, -0.9999999, 0.9999999)  # Avoid numerical issues with arcsin
     expectation = .25 + (1/(2*math.pi)) * math.asin(rho)
     return expectation
 
@@ -125,6 +126,7 @@ def gaussian_expectation_relu(cov):
     Computes E(u, v)~N(0, cov)[ReLU(u)ReLU(v)]
     """
     rho = cov[0, 1] / math.sqrt(cov[0, 0] * cov[1, 1])
+    rho = np.clip(rho, -0.9999999, 0.9999999)  # Avoid numerical issues with arcos and sqrt
     
     expectation = (
         (math.sqrt(cov[0, 0]*cov[1, 1]) / (2*math.pi))
