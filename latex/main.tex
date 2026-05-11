@@ -1,0 +1,271 @@
+\documentclass[11pt]{article}
+
+% -------------------------------------------------
+% Packages
+% -------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+\usepackage{amsmath, amssymb, amsthm, mathtools}
+\usepackage{bm}
+
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{multirow}
+
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\usepackage{enumitem}
+\usepackage{float}
+
+\usepackage{authblk}
+
+% -------------------------------------------------
+% Theorem environments
+% -------------------------------------------------
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+
+% -------------------------------------------------
+% Commands
+% -------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\ip}[2]{\left\langle #1, #2 \right\rangle}
+
+% -------------------------------------------------
+% Title
+% -------------------------------------------------
+\title{
+A Small Empirical Study of the Neural Tangent Kernel Regime
+}
+
+\author{
+Your Name
+}
+
+\affil{
+Independent Study
+}
+
+\date{\today}
+
+% -------------------------------------------------
+% Document
+% -------------------------------------------------
+\begin{document}
+
+\maketitle
+
+% -------------------------------------------------
+% Abstract
+% -------------------------------------------------
+\begin{abstract}
+
+The Neural Tangent Kernel (NTK) framework predicts that sufficiently wide neural networks trained with gradient descent behave approximately as kernel methods.
+In this note, we explore how this ``lazy training'' regime emerges in finite-width multilayer perceptrons trained on the handwritten digits dataset.
+We empirically investigate several quantities associated with the NTK regime, including parameter drift, stability of the empirical NTK during training, and dependence on network width.
+Our goal is not to establish new theoretical results, but rather to provide a compact and pedagogical exploration of finite-width behavior through the lens of NTK theory.
+
+\end{abstract}
+
+% -------------------------------------------------
+\section{Introduction}
+
+The Neural Tangent Kernel (NTK) paradigm introduced by Jacot et al.~\cite{jacot2018ntk} provides a striking perspective on the training dynamics of overparameterized neural networks.
+In the infinite-width limit, gradient descent training can be approximated by kernel regression with a deterministic kernel.
+
+This framework has generated significant interest in deep learning theory, especially through later generalizations to broad neural network architectures.
+However, practical neural networks are finite, and it is natural to ask to what extent finite-width networks actually exhibit lazy training behavior.
+
+In this note, we perform a small empirical investigation of this question on simple multilayer perceptrons trained on the handwritten digits dataset.
+We focus on experimentally measurable quantities associated with the NTK regime and study their evolution as network width increases.
+
+% -------------------------------------------------
+\section{Background}
+
+% -------------------------------------------------
+\subsection{Neural Tangent Kernel}
+
+Consider a neural network
+\[
+f(x; \theta),
+\]
+with parameters $\theta \in \R^p$.
+
+The Neural Tangent Kernel associated with the network is defined as
+\[
+K(x, x')
+=
+\ip{
+\nabla_\theta f(x; \theta)
+}{
+\nabla_\theta f(x'; \theta)
+}.
+\]
+
+In the infinite-width limit, under suitable initialization and scaling assumptions, the NTK converges to a deterministic kernel and remains approximately constant during training.
+
+% -------------------------------------------------
+\subsection{Lazy Training Regime}
+
+The lazy training regime refers to a setting where:
+\begin{itemize}
+    \item parameters move little during training,
+    \item the NTK remains nearly constant,
+    \item the network behaves approximately as its first-order linearization around initialization.
+\end{itemize}
+
+A central question is how strongly finite-width networks exhibit these behaviors in practice.
+
+% -------------------------------------------------
+\section{Experimental Setup}
+
+% -------------------------------------------------
+\subsection{Dataset}
+
+We use the handwritten digits dataset from scikit-learn.
+The dataset contains grayscale images of handwritten digits represented as $8 \times 8$ images flattened into vectors of dimension $64$.
+
+We standardize the input features using feature-wise normalization.
+
+% -------------------------------------------------
+\subsection{Architecture}
+
+We consider a two-layer multilayer perceptron of the form
+\[
+f(x)
+=
+W_2 \sigma(W_1 x + b_1) + b_2,
+\]
+where $\sigma$ is the ReLU activation function.
+
+We study several hidden widths:
+\[
+m \in \{10, 50, 100, 500, 1000\}.
+\]
+
+% -------------------------------------------------
+\subsection{Optimization}
+
+The models are trained using gradient descent (or Adam).
+For each width, we repeat training across multiple random initializations.
+
+% -------------------------------------------------
+\subsection{Measured Quantities}
+
+We study the following quantities:
+
+\paragraph{Parameter drift}
+\[
+\norm{\theta_t - \theta_0}.
+\]
+
+\paragraph{Kernel drift}
+\[
+\norm{K_t - K_0}_F,
+\]
+where $K_t$ denotes the empirical NTK at training step $t$.
+
+\paragraph{Test accuracy}
+
+We also track standard predictive performance.
+
+% -------------------------------------------------
+\section{Results}
+
+% -------------------------------------------------
+\subsection{Width and Predictive Stability}
+
+% Example figure placeholder
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{figures/accuracy_vs_width.png}
+    \caption{
+    Test accuracy as a function of network width.
+    Shaded regions indicate one standard deviation across random initializations.
+    }
+    \label{fig:accuracy}
+\end{figure}
+
+As network width increases, training becomes increasingly stable across random initializations.
+
+% -------------------------------------------------
+\subsection{Parameter Drift}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{figures/parameter_drift.png}
+    \caption{
+    Parameter drift during training for different network widths.
+    }
+    \label{fig:drift}
+\end{figure}
+
+We observe that wider networks exhibit smaller relative parameter movement during optimization.
+
+% -------------------------------------------------
+\subsection{Kernel Stability}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{figures/kernel_drift.png}
+    \caption{
+    Evolution of the empirical NTK during training.
+    }
+    \label{fig:kernel}
+\end{figure}
+
+The empirical NTK becomes increasingly stable as width grows, consistent with the NTK regime.
+
+% -------------------------------------------------
+\section{Discussion}
+
+Our experiments suggest that finite-width multilayer perceptrons progressively approach the lazy training regime as width increases.
+In particular, both parameter drift and NTK drift decrease with width.
+
+At the same time, finite networks remain meaningfully different from their infinite-width idealization.
+This highlights the importance of understanding when NTK approximations are accurate in practice.
+
+The present note is intentionally modest in scope.
+Our goal is primarily pedagogical and exploratory rather than theoretical.
+
+% -------------------------------------------------
+\section{Conclusion}
+
+We presented a small empirical exploration of finite-width behavior through the lens of the Neural Tangent Kernel framework.
+Even in simple settings, increasing width leads to increasingly stable optimization dynamics consistent with lazy training predictions.
+
+Future directions include studying convolutional architectures, explicit linearization comparisons, and departures from the NTK regime in feature-learning settings.
+
+% -------------------------------------------------
+\bibliographystyle{plain}
+
+\begin{thebibliography}{9}
+
+\bibitem{jacot2018ntk}
+Arthur Jacot, Franck Gabriel, and Clément Hongler.
+\newblock Neural Tangent Kernel: Convergence and Generalization in Neural Networks.
+\newblock In \emph{NeurIPS}, 2018.
+
+\bibitem{yang2020tensor}
+Greg Yang.
+\newblock Tensor Programs II: Neural Tangent Kernel for Any Architecture.
+\newblock arXiv preprint arXiv:2006.14548, 2020.
+
+\end{thebibliography}
+
+\end{document}

@@ -12,9 +12,20 @@ build
 .eggs
 *.manifest
 *.spec
-*.log
 *.csv
 *.pdf
+.venv/
+
+# Latex
+*.log
+*.aux
+*.fls
+*.out
+*.fdb_latexmk
+*.synctex.gz
+
+# General
+data/
 
 # Project-specific
 uv\.lock

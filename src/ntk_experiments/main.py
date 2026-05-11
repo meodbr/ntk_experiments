@@ -169,14 +169,14 @@ def compare_empirical_theoretical_ntk_on_sample(width):
     print("Empirical NTK:", empirical)
     print("Theoretical NTK:", theoretical)
 
-def compare_empirical_theoretical_ntk_on_random_walk(width, steps=100):
-    model = NTKMLP(input_dim=INPUT_DIM, width=width, depth=4, beta=BETA)
+def compare_empirical_theoretical_ntk_on_random_walk(widths, steps=25):
+    models = [NTKMLP(input_dim=INPUT_DIM, width=width, depth=4, beta=BETA) for width in widths]
     # traj = random_walk_unit_sphere(dim=INPUT_DIM, steps=100, step_size=0.05, seed=42)
     gamma, traj = unit_sphere(dim=INPUT_DIM, steps=steps, seed=42)
     traj = torch.tensor(traj, dtype=torch.float32)# .unsqueeze(1)  # Shape: (steps, 1, dim)
     print("Trajectory shape:", traj.shape)
 
-    empirical_ntks = []
+    empirical_ntks_per_model = []
     theoretical_ntks = []
 
     x = torch.zeros((INPUT_DIM, ), dtype=torch.float32)
@@ -188,7 +188,6 @@ def compare_empirical_theoretical_ntk_on_random_walk(width, steps=100):
         print(f"x_prime shape at step {i}:", x_prime.shape)
         print(f"x shape: {x.shape}")
 
-        empirical = empirical_ntk(model, torch.tensor(x).unsqueeze(0), torch.tensor(x_prime).unsqueeze(0)).item()
         theoretical = infinite_width_ntk(
             x=x,
             xp=x_prime,
@@ -201,23 +200,31 @@ def compare_empirical_theoretical_ntk_on_random_walk(width, steps=100):
             n_gh=40,
         )[0]
 
-        empirical_ntks.append(empirical)
         theoretical_ntks.append(theoretical)
 
+    for model in models:
+        empirical_ntks = []
+        for i in range(len(traj)):
+            x_prime = traj[i]
+            empirical = empirical_ntk(model, torch.tensor(x).unsqueeze(0), torch.tensor(x_prime).unsqueeze(0)).item()
+            empirical_ntks.append(empirical)
+        empirical_ntks_per_model.append(empirical_ntks)
+
     plt.figure(figsize=(10, 5))
-    plt.plot(gamma, theoretical_ntks, label='Theoretical NTK')
-    plt.plot(gamma, empirical_ntks, label='Empirical NTK', linestyle='dashed')
-    plt.title('Empirical vs Theoretical NTK along unit circle')
+    for empirical_ntks, width in zip(empirical_ntks_per_model, widths):
+        plt.plot(gamma, empirical_ntks, label=f"Finite-width NTK width={width}", linestyle='dashed')
+    plt.plot(gamma, theoretical_ntks, label='Theoretical infinite-width NTK', color="red")
+    plt.title('Empirical finite-width vs Theoretical infinite-width NTK along unit circle')
     plt.xlabel('Gamma (angle along circle)')
     plt.ylabel('NTK Value')
     plt.legend()
     plt.show()
 
 if __name__ == "__main__":
-    width = 1000
+    widths = [100, 500, 1000, 5000]
     # acc = train_model(width)
     # print(f"Test Accuracy for width {width}: {acc:.4f}")
-    print(f"Comparing empirical and theoretical NTK for width {width}...")
+    print(f"Comparing empirical and theoretical NTK for widths {widths}...")
 
     # compare_empirical_theoretical_ntk_on_sample(width)
-    compare_empirical_theoretical_ntk_on_random_walk(width, steps=100)
+    compare_empirical_theoretical_ntk_on_random_walk(widths, steps=100)
