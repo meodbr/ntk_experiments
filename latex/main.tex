@@ -54,7 +54,7 @@ A Small Empirical Study of the Neural Tangent Kernel Regime
 }
 
 \author{
-Your Name
+Desbois-Renaudin Méo
 }
 
 \affil{
@@ -91,7 +91,7 @@ In the infinite-width limit, gradient descent training can be approximated by ke
 This framework has generated significant interest in deep learning theory, especially through later generalizations to broad neural network architectures.
 However, practical neural networks are finite, and it is natural to ask to what extent finite-width networks actually exhibit lazy training behavior.
 
-In this note, we perform a small empirical investigation of this question on simple multilayer perceptrons trained on the handwritten digits dataset.
+In this note, we perform a small empirical investigation of this question on simple multilayer perceptrons trained on MNIST dataset.
 We focus on experimentally measurable quantities associated with the NTK regime and study their evolution as network width increases.
 
 % -------------------------------------------------
@@ -100,21 +100,17 @@ We focus on experimentally measurable quantities associated with the NTK regime 
 % -------------------------------------------------
 \subsection{Neural Tangent Kernel}
 
-Consider a neural network
+Consider a neural network defined with its parameters $\theta \in \R^p$ by the function : 
 \[
-f(x; \theta),
+f(.; \theta): \R^{n_0} \rightarrow \R^{n_L}
 \]
-with parameters $\theta \in \R^p$.
 
 The Neural Tangent Kernel associated with the network is defined as
 \[
-K(x, x')
+\Theta(x, x')
 =
-\ip{
-\nabla_\theta f(x; \theta)
-}{
+\nabla_\theta f(x; \theta)^T
 \nabla_\theta f(x'; \theta)
-}.
 \]
 
 In the infinite-width limit, under suitable initialization and scaling assumptions, the NTK converges to a deterministic kernel and remains approximately constant during training.
@@ -193,7 +189,7 @@ We also track standard predictive performance.
 % Example figure placeholder
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\linewidth]{figures/accuracy_vs_width.png}
+    \includegraphics[width=\linewidth]{figures/comp_widths_L4_v2.png}
     \caption{
     Test accuracy as a function of network width.
     Shaded regions indicate one standard deviation across random initializations.
@@ -202,34 +198,6 @@ We also track standard predictive performance.
 \end{figure}
 
 As network width increases, training becomes increasingly stable across random initializations.
-
-% -------------------------------------------------
-\subsection{Parameter Drift}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\linewidth]{figures/parameter_drift.png}
-    \caption{
-    Parameter drift during training for different network widths.
-    }
-    \label{fig:drift}
-\end{figure}
-
-We observe that wider networks exhibit smaller relative parameter movement during optimization.
-
-% -------------------------------------------------
-\subsection{Kernel Stability}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\linewidth]{figures/kernel_drift.png}
-    \caption{
-    Evolution of the empirical NTK during training.
-    }
-    \label{fig:kernel}
-\end{figure}
-
-The empirical NTK becomes increasingly stable as width grows, consistent with the NTK regime.
 
 % -------------------------------------------------
 \section{Discussion}

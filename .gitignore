@@ -23,6 +23,11 @@ build
 *.out
 *.fdb_latexmk
 *.synctex.gz
+*.pdf
+
+# Images
+*.png
+*.jpe?g
 
 # General
 data/
