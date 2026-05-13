@@ -3,11 +3,13 @@ from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-def get_dataset(name, seed=42):
+from ntk_experiments.config import config
+
+def get_dataset(name, seed=config.SEED):
     if name == 'synthetic':
-        return get_synthetic_data(input_dim=2, output_dim=1, seed=seed)
+        return get_synthetic_data(input_dim=config.INPUT_DIM, output_dim=config.OUTPUT_DIM, seed=seed)
     elif name == 'mnist':
-        return get_mnist_data()
+        return get_mnist_data(seed=seed)
     else:
         raise ValueError(f"Unknown dataset: {name}")
 

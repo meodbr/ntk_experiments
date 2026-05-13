@@ -62,31 +62,7 @@ from numpy.polynomial.hermite import hermgauss
 
 def gaussian_expectation(cov, f, n_gh=40):
     """
-    Compute a Gaussian expectation:
-
-        E[f(u,v)]
-
-    where:
-
-        (u,v) ~ N(0, cov)
-
-    using Gauss-Hermite quadrature.
-
-    Parameters
-    ----------
-    cov : ndarray shape (2,2)
-        Covariance matrix.
-
-    f : callable
-        Function f(u,v).
-
-    n_gh : int
-        Number of Gauss-Hermite quadrature points.
-
-    Returns
-    -------
-    float
-        Approximation of the Gaussian expectation.
+    Approximation of the Gaussian expectation.
     """
 
     # Gauss-Hermite nodes and weights
@@ -136,9 +112,7 @@ def gaussian_expectation_relu(cov):
 
 
 
-# ===============================================================
 # INFINITE-WIDTH NTK RECURSION
-# ===============================================================
 
 
 def infinite_width_ntk(
@@ -154,43 +128,20 @@ def infinite_width_ntk(
 ):
     """
     Compute the theoretical infinite-width NTK recursively.
-
-    Parameters
-    ----------
-    x : ndarray
-        First input vector.
-
-    xp : ndarray
-        Second input vector.
-
-    depth : int
-        Number of hidden layers L.
-
-    sigma : callable
-        Activation function σ.
-
-    sigma_prime : callable
-        Derivative σ'.
-
-    sigma_w : float
-        Weight variance scaling.
-
-    beta : float
-        Bias scaling coefficient.
-
-    n_gh : int
-        Number of Gauss-Hermite quadrature points.
-
-    Returns
-    -------
-    theta : float
-        Infinite-width NTK Θ^(L)(x,x').
-
-    sigma_cov : float
-        Final covariance Σ^(L)(x,x').
-
-    sigma_matrix : ndarray
-        Final 2×2 covariance matrix.
+    Parameters :
+        x (ndarray shape (d,)) : Input vector x.
+        xp (ndarray shape (d,)) : Input vector x'.
+        depth (int) : Number of layers L.
+        sigma (callable) : Activation function σ(z).
+        sigma_prime (callable) : Derivative of activation function σ'(z).
+        implemented_sigma (str) : If specified, use a built-in activation function.
+        sigma_w (float) : Weight variance σ_w².
+        beta (float) : Bias variance β².
+        n_gh (int) : Number of Gauss-Hermite quadrature points for
+    Returns :
+        theta (float) : Infinite-width NTK Θ^(L)(x,x').
+        sigma_cov (float) : Final covariance Σ^(L)(x,x').
+        sigma_matrix (ndarray) : Final 2×2 covariance matrix.
     """
 
     if implemented_sigma is None:
@@ -198,8 +149,8 @@ def infinite_width_ntk(
 
     # Input dimension
 
-    d = x.shape[0]
-    print(f"Input dimension d for theoretical NTK: {d}")
+    d = x.shape[-1]
+    # print(f"Input dimension d for theoretical NTK: {d}")
 
     # Base covariance Σ^(0)
     # Σ^(0)(x,x') = (1/d) x^T x' + β²
@@ -213,25 +164,19 @@ def infinite_width_ntk(
         [Sigma_xxp, Sigma_xpxp],
     ])
 
-    # -----------------------------------------------------------
     # Initial NTK
-    # -----------------------------------------------------------
 
     Theta = Sigma_xxp
 
-    # -----------------------------------------------------------
     # Recursive propagation through layers
-    # -----------------------------------------------------------
 
     for ell in range(depth):
 
         Sigma_next = np.zeros((2, 2))
         DotSigma_next = np.zeros((2, 2))
 
-        # -------------------------------------------------------
         # Compute Σ^(ℓ+1)
         # Compute dΣ^(ℓ+1)
-        # -------------------------------------------------------
 
         for i in range(2):
             for j in range(2):
@@ -241,12 +186,10 @@ def infinite_width_ntk(
                     [Sigma[j, i], Sigma[j, j]],
                 ])
 
-                # ------------------------------------------------
                 # Σ recursion
                 #
                 # Σ^(ℓ+1)
                 #   = σ_w² E[σ(u)σ(v)] + β²
-                # ------------------------------------------------
 
                 g_expectation = None
                 match implemented_sigma:
@@ -265,12 +208,10 @@ def infinite_width_ntk(
                     + beta**2
                 )
 
-                # ------------------------------------------------
                 # dΣ recursion
                 #
                 # dΣ^(ℓ+1)
                 #   = σ_w² E[σ'(u)σ'(v)]
-                # ------------------------------------------------
 
                 g_expectation_prime = None
                 match implemented_sigma:
@@ -289,13 +230,11 @@ def infinite_width_ntk(
                     * g_expectation_prime
                 )
 
-        # -------------------------------------------------------
         # NTK recursion
         #
         # Θ^(ℓ+1)
         #   = Σ^(ℓ+1)
         #     + dΣ^(ℓ+1) Θ^(ℓ)
-        # -------------------------------------------------------
 
         Theta = (
             Sigma_next[0, 1]
@@ -307,17 +246,34 @@ def infinite_width_ntk(
 
     return Theta, Sigma[0, 1], Sigma
 
+def simulate_batched_infinite_width_ntk(x_batch, xp_batch, **kwargs):
+    """
+    Simulate the infinite-width NTK for batches of inputs.
+    Returns len(x_batch) x len(xp_batch) matrix of NTK values.
+    """
+    
+    batch_size_x = x_batch.shape[0]
+    batch_size_xp = xp_batch.shape[0]
 
-# ===============================================================
+    ntk_matrix = np.zeros((batch_size_x, batch_size_xp))
+
+    for i in range(batch_size_x):
+        for j in range(batch_size_xp):
+            ntk, _, _ = infinite_width_ntk(
+                x=x_batch[i],
+                xp=xp_batch[j],
+                **kwargs,
+            )
+            ntk_matrix[i, j] = ntk
+
+    return ntk_matrix
+
 # ACTIVATION FUNCTIONS
-# ===============================================================
-
 
 def relu(z):
     """ReLU activation."""
 
     return np.maximum(0.0, z)
-
 
 
 def relu_prime(z):
@@ -326,12 +282,10 @@ def relu_prime(z):
     return 1.0 * (z > 0)
 
 
-
 def tanh(z):
     """tanh activation."""
 
     return np.tanh(z)
-
 
 
 def tanh_prime(z):

@@ -49,3 +49,14 @@ def empirical_ntk(model, x, x_prime):
         print("Empirical NTK value:", ntk.item())
 
     return ntk
+
+def simulate_batched_empirical_ntk(model, x_batch, x_prime_batch):
+    # Compute the empirical NTK for batches of inputs
+    batch_size = x_batch.shape[0]
+    ntk_matrix = torch.zeros((batch_size, batch_size))
+
+    for i in range(batch_size):
+        for j in range(batch_size):
+            ntk_matrix[i, j] = empirical_ntk(model, x_batch[i:i+1], x_prime_batch[j:j+1])
+
+    return ntk_matrix
