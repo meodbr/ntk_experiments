@@ -10,7 +10,7 @@ def unit_sphere(dim=2, steps=1000, seed=None):
     else:
         rng = np.random.default_rng(seed)
         traj = rng.normal(size=(steps, dim))
-        traj /= np.linalg.norm(traj, axis=1, keepdims=True)
+        traj = traj / np.linalg.norm(traj, axis=1, keepdims=True)
         return gamma, traj
 
 def random_walk_unit_sphere(

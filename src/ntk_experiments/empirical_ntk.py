@@ -31,22 +31,24 @@ def empirical_ntk(model, x, x_prime):
     output_size = model(x).shape[-1] 
     
     params = dict(model.named_parameters())
-    print("Number of parameters:", sum(p.numel() for p in params.values()))
-    print("Parameter shapes:")
+    # print("Number of parameters:", sum(p.numel() for p in params.values()))
+    # print("Parameter shapes:")
     for name, p in params.items():
-        print(f"{name}: {p.shape}")
+        # print(f"{name}: {p.shape}")
+        pass
 
     J_x = jacrev(model_output_x)(params)
     J_x = reshape_to_2D_jacobian(J_x, output_size)
-    print("J_x shape:", J_x.shape)
+    # print("J_x shape:", J_x.shape)
     J_x_prime = jacrev(model_output_x_prime)(params)
     J_x_prime = reshape_to_2D_jacobian(J_x_prime, output_size)
-    print("J_x_prime shape:", J_x_prime.shape)
+    # print("J_x_prime shape:", J_x_prime.shape)
 
     ntk = J_x @ J_x_prime.T
-    print("Empirical NTK shape:", ntk.shape)
+    # print("Empirical NTK shape:", ntk.shape)
     if ntk.numel() == 1:
-        print("Empirical NTK value:", ntk.item())
+        # print("Empirical NTK value:", ntk.item())
+        pass
 
     return ntk
 

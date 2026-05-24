@@ -8,6 +8,7 @@ from torch import nn
 
 import seaborn as sns
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from .config import config
 from .random_walk import random_walk_unit_sphere, unit_sphere
@@ -31,10 +32,11 @@ def compare_empirical_theoretical_ntk_on_circle(widths, steps=25):
     x[0] = 1.0  # Compare every point on the trajectory to this fixed reference point
     print(x)
 
-    for i in range(len(traj)):
+    for i in tqdm(range(len(traj)), desc="Computing theoretical NTKs"):
         x_prime = traj[i]
-        print(f"x_prime shape at step {i}:", x_prime.shape)
-        print(f"x shape: {x.shape}")
+        # print(f"x_prime shape at step {i}:", x_prime.shape)
+        # print(f"x shape: {x.shape}")
+        print(f"x, x_prime : {x}, {x_prime}")
 
         theoretical = infinite_width_ntk(
             x=x,
@@ -50,9 +52,9 @@ def compare_empirical_theoretical_ntk_on_circle(widths, steps=25):
 
         theoretical_ntks.append(theoretical)
 
-    for model in models:
+    for model, width in zip(models, widths):
         empirical_ntks = []
-        for i in range(len(traj)):
+        for i in tqdm(range(len(traj)), desc=f"Computing empirical NTKs for width={width}"):
             x_prime = traj[i]
             empirical = empirical_ntk(model, torch.tensor(x).unsqueeze(0), torch.tensor(x_prime).unsqueeze(0)).item()
             empirical_ntks.append(empirical)
@@ -69,7 +71,7 @@ def compare_empirical_theoretical_ntk_on_circle(widths, steps=25):
     plt.show()
 
 if __name__ == "__main__":
-    widths = [100, 500, 1000, 5000]
+    widths = [100, 500, 1000, 2000]
     print(f"Comparing empirical and theoretical NTK for widths {widths}...")
 
     compare_empirical_theoretical_ntk_on_circle(widths, steps=100)
