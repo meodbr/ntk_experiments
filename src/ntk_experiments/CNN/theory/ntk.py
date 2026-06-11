@@ -18,6 +18,7 @@ def relu_prime(x):
     """
     return (x > 0).astype(float) if isinstance(x, np.ndarray) else float(x > 0)
 
+
 def relu_prime_gaussian_expectation(lambda_cov):
     """
     Computes E[relu'(u) relu'(v)] where (u, v) ~ N(0, lambda_cov).
@@ -67,14 +68,17 @@ def dot_sigma_next(
     q_xbarxbar = Sigma_xbarxbar[gb1, gb2, gb1, gb2]
     q_xxbar = Sigma_xxbar[g1, g2, gb1, gb2]
 
-    lambda_cov = np.array([
-        [q_xx, q_xxbar],
-        [q_xxbar, q_xbarxbar],
-    ])
+    lambda_cov = np.array(
+        [
+            [q_xx, q_xxbar],
+            [q_xxbar, q_xbarxbar],
+        ]
+    )
     match implemented_phi:
         case "relu":
             return relu_prime_gaussian_expectation(lambda_cov)
         case _:
+            print("Warning: using numerical Gaussian expectation for phi_prime.")
             return bivariate_gaussian_expectation(
                 phi=phi_prime,
                 cov=lambda_cov,
@@ -162,8 +166,7 @@ def ntk_next_layer(
                             old_contribution += (
                                 dot
                                 * Theta_prev[
-                                    gamma[0], gamma[1],
-                                    gamma_bar[0], gamma_bar[1]
+                                    gamma[0], gamma[1], gamma_bar[0], gamma_bar[1]
                                 ]
                             )
 
@@ -316,7 +319,51 @@ def final_readout_ntk(Theta_L):
     Since Theta_L has shape (H_L, W_L, H_L, W_L),
     this is simply the mean of all entries.
     """
+    print("Theta_L shape:", Theta_L.shape)
     return np.mean(Theta_L)
+
+
+def compute_cnn_ntk(
+    x,
+    xbar,
+    depth,
+    k,
+    phi=None,
+    phi_prime=None,
+    sigma_w=1.0,
+    sigma_b=1.0,
+    n_gh=30,
+    implemented_phi=None,
+):
+    """
+    Convenience function to compute the final CNN NTK value between two inputs.
+
+    This is just a wrapper around compute_ntk_layers and final_readout_ntk.
+    """
+    (
+        Thetas_xx,
+        Thetas_xxbar,
+        Thetas_xbarxbar,
+        Sigmas_xx,
+        Sigmas_xxbar,
+        Sigmas_xbarxbar,
+    ) = compute_ntk_layers(
+        x=x,
+        xbar=xbar,
+        depth=depth,
+        k=k,
+        phi=phi,
+        phi_prime=phi_prime,
+        sigma_w=sigma_w,
+        sigma_b=sigma_b,
+        n_gh=n_gh,
+        implemented_phi=implemented_phi,
+    )
+
+    Theta_L = Thetas_xxbar[-1]
+    final_ntk = final_readout_ntk(Theta_L)
+
+    return final_ntk
 
 
 if __name__ == "__main__":
@@ -328,7 +375,7 @@ if __name__ == "__main__":
     depth = 3
     k = 3
     sigma_w = 1.0
-    sigma_b = 0.1
+    sigma_b = 1.0
 
     (
         Thetas_xx,

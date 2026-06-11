@@ -13,6 +13,7 @@ def bivariate_gaussian_expectation(phi, cov, n_gh=30, jitter=1e-10):
 
     cov: shape (2, 2)
     """
+    print("Warning: using numerical Gaussian expectation for phi.")
     cov = np.asarray(cov, dtype=float)
 
     # Numerical stabilization
@@ -49,9 +50,12 @@ def relu_gaussian_expectation(cov):
         return 0.0
 
     rho = q_xxbar / np.sqrt(q_xx * q_xbarxbar)
+    sigma_x = np.sqrt(q_xx)
+    sigma_xbar = np.sqrt(q_xbarxbar)
 
     return (
-        np.sqrt(q_xx * q_xbarxbar) * (np.arcsin(rho) + np.pi / 2) + q_xxbar / 2
+        (sigma_x * sigma_xbar / (2 * np.pi)) * 
+        (np.sqrt(1 - rho*rho) + rho * (np.arcsin(rho) + np.pi / 2))
     )
 
 
