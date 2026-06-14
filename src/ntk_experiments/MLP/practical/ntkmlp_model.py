@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import math
 
-from .config import config
+from ntk_experiments.config import config
 
 # ============================================================
 # NTK-STYLE LINEAR LAYER

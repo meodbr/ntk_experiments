@@ -7,9 +7,9 @@ import torch
 
 from ntk_experiments.config import config
 from ntk_experiments.dataset import get_dataset
-from ntk_experiments.theoretical_ntk import infinite_width_ntk, simulate_batched_infinite_width_ntk
-from ntk_experiments.inference import predict_infinite
-from ntk_experiments.ntkmlp_model import NTKMLP
+from ntk_experiments.MLP.theory.theoretical_ntk import infinite_width_ntk, simulate_batched_infinite_width_ntk
+from ntk_experiments.usage.inference import predict_infinite
+from ntk_experiments.MLP.practical.ntkmlp_model import NTKMLP
 from ntk_experiments.train import train_model
 
 def plot_infinite_width_predictions():
