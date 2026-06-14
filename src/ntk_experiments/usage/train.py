@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from ntk_experiments.dataset import get_dataset
-from ntk_experiments.ntkmlp_model import NTKMLP
+from ntk_experiments.usage.dataset import get_dataset
+from ntk_experiments.MLP.practical.ntkmlp_model import NTKMLP
 
 # Training function
 def train_model(model, dataset='synthetic', epochs=50, lr=1e-3):

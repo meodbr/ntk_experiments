@@ -11,10 +11,10 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from .config import config
-from .random_walk import random_walk_unit_sphere, unit_sphere
-from .theoretical_ntk import infinite_width_ntk, relu, relu_prime
+from .utils.random_walk import random_walk_unit_sphere, unit_sphere
+from .MLP.theory.theoretical_ntk import infinite_width_ntk, relu, relu_prime
 from .empirical_ntk import empirical_ntk
-from .ntkmlp_model import NTKMLP
+from .MLP.practical.ntkmlp_model import NTKMLP
 
 sns.set_theme()
 

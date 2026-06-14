@@ -8,12 +8,12 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from .config import config
-from .random_walk import random_walk_unit_sphere, unit_sphere
-from .theoretical_ntk import infinite_width_ntk, relu, relu_prime
+from .utils.random_walk import random_walk_unit_sphere, unit_sphere
+from .MLP.theory.theoretical_ntk import infinite_width_ntk, relu, relu_prime
 from .empirical_ntk import empirical_ntk, reshape_to_2D_jacobian
-from .ntkmlp_model import NTKMLP
-from .train import train_model
-from .dataset import get_dataset
+from .MLP.practical.ntkmlp_model import NTKMLP
+from .usage.train import train_model
+from .usage.dataset import get_dataset
 
 sns.set_theme()
 
