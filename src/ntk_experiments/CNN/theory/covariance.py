@@ -1,6 +1,8 @@
+import torch
 import numpy as np
 from numpy.polynomial.hermite import hermgauss
 
+from ntk_experiments.CNN.theory.four_d_cumsum import patches_sum_4d_cumsum_method
 
 def relu(x):
     return np.maximum(x, 0.0)
@@ -59,6 +61,29 @@ def relu_gaussian_expectation(cov):
     )
 
 
+def cumulative_covariance_next_layer(
+    Sigma_xx,
+    Sigma_xxbar,
+    Sigma_xbarxbar,
+    k,
+    phi=relu,
+    sigma_w=1.0,
+    sigma_b=1.0,
+    n_gh=30,
+    implemented_phi=None,
+):
+    Gauss_exp = full_gauss_exp(
+        Sigma_xx,
+        Sigma_xxbar,
+        Sigma_xbarxbar,
+        phi=phi,
+        n_gh=n_gh,
+        implemented_phi=implemented_phi,
+    )
+    Patches_sum = patches_sum_4d_cumsum_method(Gauss_exp, k1=k, k2=k)
+    return sigma_b**2 + (sigma_w**2 / (k * k)) * Patches_sum
+
+
 def covariance_initialization(x, xbar, k, sigma_w=1.0, sigma_b=1.0):
     """
     Computes Sigma^{(1)} for two images x and xbar.
@@ -102,6 +127,46 @@ def covariance_initialization(x, xbar, k, sigma_w=1.0, sigma_b=1.0):
 
     return Sigma
 
+def full_gauss_exp(
+    Sigma_xx,
+    Sigma_xxbar,
+    Sigma_xbarxbar,
+    phi=relu,
+    n_gh=30,
+    implemented_phi=None,
+):
+    """
+    Computes E[phi(u) phi(v)] where (u,v) ~ N(0, cov)
+    for all pairs of positions in Sigma_xx, Sigma_xxbar, Sigma_xbarxbar.
+
+    Returns:
+        Gauss_exp: shape (H_l, W_l, H_l, W_l)
+    """
+    H_l, W_l, _, _ = Sigma_xxbar.shape
+
+    Gauss_exp = np.zeros((H_l, W_l, H_l, W_l))
+
+    for a1 in range(H_l):
+        for a2 in range(W_l):
+            for b1 in range(H_l):
+                for b2 in range(W_l):
+
+                    lambda_cov = np.array([
+                        [Sigma_xx[a1, a2, a1, a2], Sigma_xxbar[a1, a2, b1, b2]],
+                        [Sigma_xxbar[a1, a2, b1, b2], Sigma_xbarxbar[b1, b2, b1, b2]],
+                    ])
+
+                    match implemented_phi:
+                        case "relu":
+                            Gauss_exp[a1, a2, b1, b2] = relu_gaussian_expectation(lambda_cov)
+                        case _:
+                            Gauss_exp[a1, a2, b1, b2] = bivariate_gaussian_expectation(
+                                phi=phi,
+                                cov=lambda_cov,
+                                n_gh=n_gh,
+                            )
+
+    return Gauss_exp
 
 def covariance_next_layer(
     Sigma_xx,
@@ -298,14 +363,14 @@ def final_readout_covariance(Sigma_L):
 
 if __name__ == "__main__":
     # Example usage
-    H = 8
+    H = 16
     W = H
 
     x = np.random.randn(3, H, W)  # Random image 1
     xbar = np.random.randn(3, H, W)  # Random image 2
 
     depth = 3
-    k = 3
+    k = 5
 
     Sigmas_xx, Sigmas_xxbar, Sigmas_xbarxbar = compute_covariance_layers(
         x, xbar, depth=depth, k=k, sigma_w=1.0, sigma_b=1.0, n_gh=30, implemented_phi="relu"

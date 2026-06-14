@@ -25,6 +25,9 @@ build
 *.synctex.gz
 *.pdf
 
+# Perf
+*.prof
+
 # Images
 *.png
 *.jpe?g
