@@ -1,7 +1,12 @@
 import torch
+from torch.utils.data import DataLoader
+from torchvision import datasets, transforms
+
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+
+import matplotlib.pyplot as plt
 
 from ntk_experiments.config import config
 
@@ -23,7 +28,7 @@ def get_synthetic_data(num_samples=1000, input_dim=64, output_dim=1, seed=42):
     return X_train, X_test, y_train, y_test
 
 
-def get_mnist_data(seed=42):
+def get_lowres_mnist_data(seed=42):
     digits = load_digits()
     X = digits.data
     y = digits.target
@@ -39,3 +44,51 @@ def get_mnist_data(seed=42):
     y_test = torch.tensor(y_test, dtype=torch.long)
 
     return X_train, X_test, y_train, y_test
+
+def get_raw_lowres_mnist_data(seed=42):
+    digits = load_digits()
+    X = digits.data
+    y = digits.target
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.3, random_state=seed
+    )
+
+    return X_train, X_test, y_train, y_test
+
+def plot_lowres_mnist_sample(X, y, index=0):
+    plt.imshow(X[index].reshape(8, 8), cmap='gray')
+    plt.title(f"Label: {y[index].item()}")
+    plt.axis('off')
+    plt.show()
+
+def get_raw_mnist_data(seed=42):
+
+    transform = transforms.ToTensor()
+
+    train_dataset = datasets.MNIST(
+        root="./data",
+        train=True,
+        download=True,
+        transform=transform,
+    )
+
+    test_dataset = datasets.MNIST(
+        root="./data",
+        train=False,
+        download=True,
+        transform=transform,
+    )
+
+    X_train = torch.stack([train_dataset[i][0].squeeze() for i in range(len(train_dataset))])
+    y_train = torch.tensor([train_dataset[i][1] for i in range(len(train_dataset))], dtype=torch.long)
+    X_test = torch.stack([test_dataset[i][0].squeeze() for i in range(len(test_dataset))])
+    y_test = torch.tensor([test_dataset[i][1] for i in range(len(test_dataset))], dtype=torch.long)
+
+    return X_train, X_test, y_train, y_test
+
+def plot_mnist_sample(X, y, index=0):
+    plt.imshow(X[index].numpy().squeeze(), cmap='gray')
+    plt.title(f"Label: {y[index].item()}")
+    plt.axis('off')
+    plt.show()

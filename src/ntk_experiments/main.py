@@ -13,7 +13,7 @@ from tqdm import tqdm
 from .config import config
 from .utils.random_walk import random_walk_unit_sphere, unit_sphere
 from .MLP.theory.theoretical_ntk import infinite_width_ntk, relu, relu_prime
-from .empirical_ntk import empirical_ntk
+from .usage.empirical_ntk import empirical_ntk
 from .MLP.practical.ntkmlp_model import NTKMLP
 
 sns.set_theme()

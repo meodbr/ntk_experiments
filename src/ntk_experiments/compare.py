@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from .config import config
 from .utils.random_walk import random_walk_unit_sphere, unit_sphere
 from .MLP.theory.theoretical_ntk import infinite_width_ntk, relu, relu_prime
-from .empirical_ntk import empirical_ntk, reshape_to_2D_jacobian
+from .usage.empirical_ntk import empirical_ntk, reshape_to_2D_jacobian
 from .MLP.practical.ntkmlp_model import NTKMLP
 from .usage.train import train_model
 from .usage.dataset import get_dataset

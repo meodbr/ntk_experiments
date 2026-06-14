@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 
-from ntk_experiments.empirical_ntk import empirical_ntk
+from ntk_experiments.usage.empirical_ntk import empirical_ntk
 from ntk_experiments.CNN.practical.cnn_model import NTKCNN
 from ntk_experiments.CNN.theory.ntk import compute_cnn_ntk
 
