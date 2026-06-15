@@ -23,7 +23,6 @@ build
 *.out
 *.fdb_latexmk
 *.synctex.gz
-*.pdf
 
 # Perf
 *.prof
