@@ -13,7 +13,6 @@ build
 *.manifest
 *.spec
 *.csv
-*.pdf
 .venv/
 
 # Latex
