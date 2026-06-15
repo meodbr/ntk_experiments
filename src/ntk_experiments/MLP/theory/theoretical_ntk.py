@@ -101,6 +101,8 @@ def gaussian_expectation_relu(cov):
     """
     Computes E(u, v)~N(0, cov)[ReLU(u)ReLU(v)]
     """
+    # print(f"Covariance matrix for ReLU expectation: {cov}")
+    # print(f"Covariance matrix shape for ReLU expectation: {cov.shape}")
     rho = cov[0, 1] / math.sqrt(cov[0, 0] * cov[1, 1])
     rho = np.clip(rho, -0.9999999, 0.9999999)  # Avoid numerical issues with arcos and sqrt
     
@@ -155,9 +157,20 @@ def infinite_width_ntk(
     # Base covariance Σ^(0)
     # Σ^(0)(x,x') = (1/d) x^T x' + β²
 
-    Sigma_xx = np.dot(x, x) / d + beta**2
-    Sigma_xxp = np.dot(x, xp) / d + beta**2
-    Sigma_xpxp = np.dot(xp, xp) / d + beta**2
+    # print(f"Input x shape: {x.shape}")
+
+    # Bad implementation summing over batch dim
+    # Sigma_xx = x.T @ x / d + beta**2
+    # Sigma_xxp = x.T @ xp / d + beta**2
+    # Sigma_xpxp = xp.T @ xp / d + beta**2
+
+    # Good implementation
+    Sigma_xx = np.dot(x.squeeze(), x.squeeze()) / d + beta**2
+    Sigma_xxp = np.dot(x.squeeze(), xp.squeeze()) / d + beta**2
+    Sigma_xpxp = np.dot(xp.squeeze(), xp.squeeze()) / d + beta**2
+
+
+    # print(f"Base covariance shape Σ^(0)(x,x): {Sigma_xx.shape}")
 
     Sigma = np.array([
         [Sigma_xx, Sigma_xxp],
@@ -243,6 +256,10 @@ def infinite_width_ntk(
 
         # Update covariance
         Sigma = Sigma_next
+
+    # print(f"Final covariance matrix Σ^(L): {Sigma}")
+    # print(f"Final NTK Θ^(L): {Theta}")
+    # print(f"Final shapes: Σ^(L) shape: {Sigma.shape}, Θ^(L) shape: {Theta.shape}")
 
     return Theta, Sigma[0, 1], Sigma
 

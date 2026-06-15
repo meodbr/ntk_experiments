@@ -80,6 +80,11 @@ def cumulative_covariance_initialization(x, xbar, k, sigma_w=1.0, sigma_b=1.0):
         Sigma: shape (H1, W1, H1, W1)
         where H1 = H - k + 1, W1 = W - k + 1
     """
+    if x.ndim == 4:
+        x = x.squeeze(0)
+    if xbar.ndim == 4:
+        xbar = xbar.squeeze(0)
+    # print(f"x shape: {x.shape}, xbar shape: {xbar.shape}")
     C0, H, W = x.shape
     C0_bar, H_bar, W_bar = xbar.shape
 

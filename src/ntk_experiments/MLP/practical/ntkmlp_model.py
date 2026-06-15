@@ -34,10 +34,15 @@ class NTKLinear(nn.Module):
 
     def forward(self, x):
         # NTK scaling
+        # print(f"NTKLinear: input shape: {x.shape}")
         x = (self.weight @ x.T).T / math.sqrt(self.in_features)
+
+        # print(f"NTKLinear: after weight shape: {x.shape}")
 
         if self.bias is not None:
             x = x + self.beta*self.bias
+        
+        # print(f"NTKLinear: after bias shape: {x.shape}")
 
         return x
 
@@ -55,12 +60,14 @@ class NTKMLP(nn.Module):
     - Gaussian initialization N(0,1)
     """
 
-    def __init__(self, input_dim, width, depth, beta, activation=nn.ReLU()):
+    def __init__(self, input_dim, output_dim, width, depth, beta, sigma_w=1.0, sigma_b=1.0, activation=nn.ReLU()):
         super().__init__()
 
         self.depth = depth
         self.activation = activation
         self.beta = beta
+        self.sigma_w = sigma_w
+        self.sigma_b = sigma_b
 
         layers = []
 
@@ -74,7 +81,7 @@ class NTKMLP(nn.Module):
         self.layers = nn.ModuleList(layers)
 
         # Output layer (scalar output NTK common choice)
-        self.out_layer = NTKLinear(width, 1, beta)
+        self.out_layer = NTKLinear(width, output_dim, beta)
 
         self.reset_parameters()
 
@@ -82,13 +89,13 @@ class NTKMLP(nn.Module):
 
     def reset_parameters(self):
         for layer in self.layers:
-            nn.init.normal_(layer.weight, mean=0.0, std=1.0)
+            nn.init.normal_(layer.weight, mean=0.0, std=self.sigma_w)
             if layer.bias is not None:
-                nn.init.normal_(layer.bias, mean=0.0, std=1.0)
+                nn.init.normal_(layer.bias, mean=0.0, std=self.sigma_b)
 
-        nn.init.normal_(self.out_layer.weight, mean=0.0, std=1.0)
+        nn.init.normal_(self.out_layer.weight, mean=0.0, std=self.sigma_w)
         if self.out_layer.bias is not None:
-            nn.init.normal_(self.out_layer.bias, mean=0.0, std=1.0)
+            nn.init.normal_(self.out_layer.bias, mean=0.0, std=self.sigma_b)
 
     # Forward pass
 
@@ -99,12 +106,14 @@ class NTKMLP(nn.Module):
 
         # NTK convention: work with row vectors
         h = x
+        # print(f"Input shape: {h.shape}")
 
         for layer in self.layers:
             h = layer(h)
             h = self.activation(h)
 
         out = self.out_layer(h)
+        # print(f"Output shape: {out.shape}")
 
         return out.squeeze(-1)
 

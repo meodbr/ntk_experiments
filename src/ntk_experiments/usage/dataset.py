@@ -1,4 +1,6 @@
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
@@ -14,7 +16,7 @@ def get_dataset(name, seed=config.SEED):
     if name == 'synthetic':
         return get_synthetic_data(input_dim=config.INPUT_DIM, output_dim=config.OUTPUT_DIM, seed=seed)
     elif name == 'mnist':
-        return get_mnist_data(seed=seed)
+        return get_raw_mnist_data(seed=seed)
     else:
         raise ValueError(f"Unknown dataset: {name}")
 
@@ -38,10 +40,13 @@ def get_lowres_mnist_data(seed=42):
         X, y, test_size=0.3, random_state=seed
     )
 
-    X_train = torch.tensor(X_train, dtype=torch.float32)
-    X_test = torch.tensor(X_test, dtype=torch.float32)
-    y_train = torch.tensor(y_train, dtype=torch.long)
-    y_test = torch.tensor(y_test, dtype=torch.long)
+    X_train = torch.tensor(X_train, dtype=torch.float32).view(-1, 1, 8, 8)  # Reshape to (N, C, H, W)
+    X_test = torch.tensor(X_test, dtype=torch.float32).view(-1, 1, 8, 8)  # Reshape to (N, C, H, W)
+    y_train = torch.tensor(y_train, dtype=torch.long).view(-1)  # Ensure y is of shape (N,)
+    y_test = torch.tensor(y_test, dtype=torch.long).view(-1)  # Ensure y is of shape (N,)
+
+    y_train = F.one_hot(y_train, num_classes=10).float()  # Convert to one-hot encoding
+    y_test = F.one_hot(y_test, num_classes=10).float()  # Convert to one-hot encoding
 
     return X_train, X_test, y_train, y_test
 
@@ -62,8 +67,7 @@ def plot_lowres_mnist_sample(X, y, index=0):
     plt.axis('off')
     plt.show()
 
-def get_raw_mnist_data(seed=42):
-
+def get_raw_mnist_data(seed=42, n_train=200, n_test=40):
     transform = transforms.ToTensor()
 
     train_dataset = datasets.MNIST(
@@ -80,10 +84,30 @@ def get_raw_mnist_data(seed=42):
         transform=transform,
     )
 
-    X_train = torch.stack([train_dataset[i][0].squeeze() for i in range(len(train_dataset))])
-    y_train = torch.tensor([train_dataset[i][1] for i in range(len(train_dataset))], dtype=torch.long)
-    X_test = torch.stack([test_dataset[i][0].squeeze() for i in range(len(test_dataset))])
-    y_test = torch.tensor([test_dataset[i][1] for i in range(len(test_dataset))], dtype=torch.long)
+    g = torch.Generator().manual_seed(seed)
+
+    train_idx = torch.randperm(len(train_dataset), generator=g)[:n_train]
+    test_idx = torch.randperm(len(test_dataset), generator=g)[:n_test]
+
+    X_train = torch.stack([
+        train_dataset[i.item()][0]
+        for i in train_idx
+    ])
+
+    y_train = torch.tensor([
+        train_dataset[i.item()][1]
+        for i in train_idx
+    ], dtype=torch.long)
+
+    X_test = torch.stack([
+        test_dataset[i.item()][0]
+        for i in test_idx
+    ])
+
+    y_test = torch.tensor([
+        test_dataset[i.item()][1]
+        for i in test_idx
+    ], dtype=torch.long)
 
     return X_train, X_test, y_train, y_test
 

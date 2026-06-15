@@ -104,9 +104,8 @@ class NTKCNN(nn.Module):
         # Output layer (conv into output_dim channels before Global average pooling)
         self.out_layer = NTKConv2d(width, output_dim, kernel_size, beta)
 
+        # Custom initialization (CRITICAL for NTK match)
         self.reset_parameters()
-
-    # Custom initialization (CRITICAL for NTK match)
 
     def reset_parameters(self):
         for layer in self.layers:

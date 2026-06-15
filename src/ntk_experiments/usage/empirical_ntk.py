@@ -17,10 +17,12 @@ def reshape_to_2D_jacobian(jacobian_dict, output_size):
     full_jacobian = torch.cat(jacobian_rows, dim=1)  # Shape: (output_size, total_num_params)
     return full_jacobian
 
-def empirical_ntk(model, x, x_prime):
+def empirical_ntk(x, x_prime, model, output_size=None):
     # The neural tangent kernel between two inputs x and x':
     # K(x, x') = J(x) @ J(x').T where J is the Jacobian of the network output w.r.t. parameters
     # Compute Jacobian for x
+
+    # print(f"Model: {model}")
 
     def model_output_x(params):
         return functional_call(model, params, x)
@@ -28,8 +30,9 @@ def empirical_ntk(model, x, x_prime):
     def model_output_x_prime(params):
         return functional_call(model, params, x_prime)
 
-    output_size = model(x).shape[-1] 
-    
+    if output_size is None:
+        output_size = model(x).shape[-1]
+
     params = dict(model.named_parameters())
     # print("Number of parameters:", sum(p.numel() for p in params.values()))
     # print("Parameter shapes:")
